@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Calories {
+  id        String   @id @default(uuid()) @map("IDT_CALORIES")
+  quantity  Int      @unique @map("NUM_QUANTITY")
+  createdAt DateTime @default(now()) @map("DAT_CREATED")
+  Diet      Diet?
+}
+
+model Diet {
+  id          String   @id @default(uuid()) @map("IDT_DIET")
+  caloriesId  String   @unique @map("IDT_CALORIES")
+  description String   @map("DES_DESCRIPTION")
+  createdAt   DateTime @default(now()) @map("DAT_CREATED")
+
+  calories Calories @relation(fields: [caloriesId], references: [id])
+}
