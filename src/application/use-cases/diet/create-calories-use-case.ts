@@ -5,24 +5,25 @@ import {
 import { DietRepository } from "@/infra/database/repositories/diet-repository";
 import { roundToDecimals } from "@/utils/round-to-decimals";
 import { roundToNearestHundred } from "@/utils/round-to-nearest-hundred";
+import { CreateCalorieasException } from "./errors/create-calories-exception";
 
 export class CreateCaloriesUseCase {
   constructor(private dietRepository: DietRepository) {}
+
+  private basalMetabolicRate: number = 0;
 
   async execute(inputCalories: CalculateCalories): Promise<CaloriesResult> {
     try {
       const { activity, age, gender, height, weight, weightGoal } =
         inputCalories;
 
-      let basalMetabolicRate: number = 0;
-
       if (gender === "female") {
-        basalMetabolicRate = 10 * weight + 6.25 * height - 5 * age - 161;
+        this.basalMetabolicRate = 10 * weight + 6.25 * height - 5 * age - 161;
       } else {
-        basalMetabolicRate = 10 * weight + 6.25 * height - 5 * age + 5;
+        this.basalMetabolicRate = 10 * weight + 6.25 * height - 5 * age + 5;
       }
 
-      const totalCalories = basalMetabolicRate * activity;
+      const totalCalories = this.basalMetabolicRate * activity;
 
       const totalCaloriesWithWeightGoal =
         weightGoal > weight
@@ -56,8 +57,8 @@ export class CreateCaloriesUseCase {
         fat: fatRounded,
         carbs: carbsRounded,
       };
-    } catch (err: any) {
-      throw new Error("Erro ao criar as calorias");
+    } catch (err) {
+      throw new CreateCalorieasException(err);
     }
   }
 }

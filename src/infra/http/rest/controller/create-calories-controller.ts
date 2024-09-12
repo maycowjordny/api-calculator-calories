@@ -1,15 +1,25 @@
 import { makeCreateCalories } from "@/application/factory/diet/make-create-calories-factory";
+import { CreateCalorieasException } from "@/application/use-cases/diet/errors/create-calories-exception";
 import { CalculateCalories } from "@/domain/interfaces/calculate-calories";
 import { FastifyReply, FastifyRequest } from "fastify";
 
 export class CreateCaloriesController {
   public create = async (request: FastifyRequest, reply: FastifyReply) => {
-    const makeCreateCaloriesUseCase = makeCreateCalories();
+    try {
+      const makeCreateCaloriesUseCase = makeCreateCalories();
 
-    const calories = await makeCreateCaloriesUseCase.execute(
-      request.body as CalculateCalories
-    );
+      const calories = await makeCreateCaloriesUseCase.execute(
+        request.body as CalculateCalories
+      );
 
-    reply.status(201).send({ calories: calories });
+      return reply.status(201).send({ calories: calories });
+    } catch (err) {
+      return reply
+        .status(err instanceof CreateCalorieasException ? 500 : 409)
+        .send({
+          name: (err as Error).name,
+          message: (err as Error).message,
+        });
+    }
   };
 }
