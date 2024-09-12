@@ -8,7 +8,7 @@ export interface CalculateCalories {
 }
 
 export interface CaloriesResult {
-  calories?: number;
+  quantity?: number;
   protein: number;
   fat: number;
   carbs: number;

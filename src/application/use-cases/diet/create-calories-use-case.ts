@@ -51,7 +51,7 @@ export class CreateCaloriesUseCase {
       }
 
       return {
-        calories: existingCalories.calories!,
+        quantity: existingCalories.calories!,
         protein: proteinRounded,
         fat: fatRounded,
         carbs: carbsRounded,

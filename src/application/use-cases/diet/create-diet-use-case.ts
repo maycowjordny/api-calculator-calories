@@ -15,6 +15,10 @@ export class CreateDietUseCase {
         );
       }
 
+      if (existingDiet.description!.length > 0) {
+        return existingDiet.description!;
+      }
+
       const updatedDescription = await this.generateDietDescription(calories);
 
       await this.dietRepository.update(updatedDescription, calories);
