@@ -339,7 +339,7 @@ app.get("/cron", async (request, reply) => {
 import_node_cron.default.schedule("*/5 * * * *", async () => {
   try {
     const response = await import_axios.default.get(
-      "https://api-calculator-calories-1.onrender.com/ping"
+      "https://api-calculator-calories-1.onrender.com/cron"
     );
     console.log("Server pinged:", response.data);
   } catch (error) {
