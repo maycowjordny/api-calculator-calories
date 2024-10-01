@@ -34,7 +34,9 @@ __export(app_exports, {
 });
 module.exports = __toCommonJS(app_exports);
 var import_cors = __toESM(require("@fastify/cors"));
+var import_axios = __toESM(require("axios"));
 var import_fastify = __toESM(require("fastify"));
+var import_node_cron = __toESM(require("node-cron"));
 
 // src/utils/round-to-decimals.ts
 function roundToDecimals(num, decimals = 2) {
@@ -331,6 +333,19 @@ async function appRoutes() {
 
 // src/app.ts
 var app = (0, import_fastify.default)();
+app.get("/cron", async (request, reply) => {
+  reply.status(200).send("ok");
+});
+import_node_cron.default.schedule("*/5 * * * *", async () => {
+  try {
+    const response = await import_axios.default.get(
+      "https://api-calculator-calories-1.onrender.com/ping"
+    );
+    console.log("Server pinged:", response.data);
+  } catch (error) {
+    console.error("Error pinging server:", error);
+  }
+});
 app.register(appRoutes);
 app.register(import_cors.default, {
   origin: "*"

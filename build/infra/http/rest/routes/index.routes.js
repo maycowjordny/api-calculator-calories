@@ -36,8 +36,23 @@ module.exports = __toCommonJS(index_routes_exports);
 
 // src/app.ts
 var import_cors = __toESM(require("@fastify/cors"));
+var import_axios = __toESM(require("axios"));
 var import_fastify = __toESM(require("fastify"));
+var import_node_cron = __toESM(require("node-cron"));
 var app = (0, import_fastify.default)();
+app.get("/cron", async (request, reply) => {
+  reply.status(200).send("ok");
+});
+import_node_cron.default.schedule("*/5 * * * *", async () => {
+  try {
+    const response = await import_axios.default.get(
+      "https://api-calculator-calories-1.onrender.com/ping"
+    );
+    console.log("Server pinged:", response.data);
+  } catch (error) {
+    console.error("Error pinging server:", error);
+  }
+});
 app.register(appRoutes);
 app.register(import_cors.default, {
   origin: "*"
