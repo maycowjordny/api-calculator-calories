@@ -24,8 +24,8 @@ __export(make_create_diet_factory_exports, {
 });
 module.exports = __toCommonJS(make_create_diet_factory_exports);
 
-// src/utils/format-menus.ts
-function formatMenus(text) {
+// src/utils/format-diets.ts
+function formatDiets(text) {
   let menus = text.split(/\*\*Card[aá]pio \d+:\*\*/).map((menu) => menu.trim()).filter((menu) => menu.length > 0);
   return menus.slice(1);
 }
@@ -86,7 +86,7 @@ var CreateDietUseCase = class {
     );
     const response = result.response;
     const text = response.text();
-    return formatMenus(text);
+    return formatDiets(text);
   }
 };
 

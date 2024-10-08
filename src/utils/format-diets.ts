@@ -1,4 +1,4 @@
-export function formatMenus(text: string): string[] {
+export function formatDiets(text: string): string[] {
   let menus = text
     .split(/\*\*Card[aá]pio \d+:\*\*/)
     .map((menu) => menu.trim())

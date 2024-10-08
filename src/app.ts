@@ -14,7 +14,6 @@ cron.schedule("*/5 * * * *", async () => {
     const response = await axios.get(
       "https://api-calculator-calories-1.onrender.com/cron"
     );
-    console.log("Server pinged:", response.data);
   } catch (error) {
     console.error("Error pinging server:", error);
   }

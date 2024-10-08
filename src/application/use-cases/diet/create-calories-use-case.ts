@@ -5,7 +5,7 @@ import {
 import { DietRepository } from "@/infra/database/repositories/diet-repository";
 import { roundToDecimals } from "@/utils/round-to-decimals";
 import { roundToNearestHundred } from "@/utils/round-to-nearest-hundred";
-import { CreateCalorieasException } from "./errors/create-calories-exception";
+import { CreateCaloriesException } from "./errors/create-calories-exception";
 
 export class CreateCaloriesUseCase {
   constructor(private dietRepository: DietRepository) {}
@@ -58,7 +58,7 @@ export class CreateCaloriesUseCase {
         carbs: carbsRounded,
       };
     } catch (err) {
-      throw new CreateCalorieasException(err);
+      throw new CreateCaloriesException(err);
     }
   }
 }

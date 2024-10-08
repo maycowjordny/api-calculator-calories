@@ -1,5 +1,5 @@
 import { makeCreateCalories } from "@/application/factory/diet/make-create-calories-factory";
-import { CreateCalorieasException } from "@/application/use-cases/diet/errors/create-calories-exception";
+import { CreateCaloriesException } from "@/application/use-cases/diet/errors/create-calories-exception";
 import { CalculateCalories } from "@/domain/interfaces/calculate-calories";
 import { FastifyReply, FastifyRequest } from "fastify";
 
@@ -15,7 +15,7 @@ export class CreateCaloriesController {
       return reply.status(201).send({ calories: calories });
     } catch (err) {
       return reply
-        .status(err instanceof CreateCalorieasException ? 500 : 409)
+        .status(err instanceof CreateCaloriesException ? 500 : 409)
         .send({
           name: (err as Error).name,
           message: (err as Error).message,

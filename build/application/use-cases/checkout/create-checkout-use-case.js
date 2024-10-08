@@ -17,12 +17,12 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/application/use-cases/diet/errors/create-calories-exception.ts
-var create_calories_exception_exports = {};
-__export(create_calories_exception_exports, {
-  CreateCaloriesException: () => CreateCaloriesException
+// src/application/use-cases/checkout/create-checkout-use-case.ts
+var create_checkout_use_case_exports = {};
+__export(create_checkout_use_case_exports, {
+  CreateCheckoutUseCase: () => CreateCheckoutUseCase
 });
-module.exports = __toCommonJS(create_calories_exception_exports);
+module.exports = __toCommonJS(create_checkout_use_case_exports);
 
 // src/application/errors/use-case-errors.ts
 var UseCaseError = class extends Error {
@@ -34,14 +34,28 @@ var UseCaseError = class extends Error {
   }
 };
 
-// src/application/use-cases/diet/errors/create-calories-exception.ts
-var CreateCaloriesException = class extends UseCaseError {
+// src/application/use-cases/checkout/errors/create-checkout-exception.ts
+var CreateCheckoutException = class extends UseCaseError {
   constructor(err) {
-    super(`Erro ao criar as calorias : ${err}.`);
-    this.name = "CreateCalorieasException";
+    super(`Erro ao processar pagamento: ${err}.`);
+    this.name = "CreateCheckoutException";
+  }
+};
+
+// src/application/use-cases/checkout/create-checkout-use-case.ts
+var CreateCheckoutUseCase = class {
+  constructor(stripeRepository) {
+    this.stripeRepository = stripeRepository;
+  }
+  async execute() {
+    try {
+      return this.stripeRepository.createCheckoutSession();
+    } catch (err) {
+      throw new CreateCheckoutException(err);
+    }
   }
 };
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  CreateCaloriesException
+  CreateCheckoutUseCase
 });

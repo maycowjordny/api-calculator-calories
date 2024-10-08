@@ -17,23 +17,21 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/infra/http/rest/routes/create-calories.routes.ts
-var create_calories_routes_exports = {};
-__export(create_calories_routes_exports, {
-  createCaloriesRoutes: () => createCaloriesRoutes
+// src/infra/http/rest/routes/diet.routes.ts
+var diet_routes_exports = {};
+__export(diet_routes_exports, {
+  createDietRoutes: () => createDietRoutes
 });
-module.exports = __toCommonJS(create_calories_routes_exports);
+module.exports = __toCommonJS(diet_routes_exports);
 
-// src/utils/round-to-decimals.ts
-function roundToDecimals(num, decimals = 2) {
-  const factor = Math.pow(10, decimals);
-  return Math.round(num * factor) / factor;
+// src/utils/format-diets.ts
+function formatDiets(text) {
+  let menus = text.split(/\*\*Card[aá]pio \d+:\*\*/).map((menu) => menu.trim()).filter((menu) => menu.length > 0);
+  return menus.slice(1);
 }
 
-// src/utils/round-to-nearest-hundred.ts
-function roundToNearestHundred(num) {
-  return Math.round(num / 100) * 100;
-}
+// src/application/use-cases/diet/create-diet-use-case.ts
+var import_generative_ai = require("@google/generative-ai");
 
 // src/application/errors/use-case-errors.ts
 var UseCaseError = class extends Error {
@@ -45,56 +43,50 @@ var UseCaseError = class extends Error {
   }
 };
 
-// src/application/use-cases/diet/errors/create-calories-exception.ts
-var CreateCalorieasException = class extends UseCaseError {
+// src/application/use-cases/diet/errors/create-diet-exception.ts
+var CreateDietException = class extends UseCaseError {
   constructor(err) {
-    super(`Erro ao criar as calorias : ${err}.`);
-    this.name = "CreateCalorieasException";
+    super(`Erro ao criar dieta: ${err}.`);
+    this.name = "CreateDietException";
   }
 };
 
-// src/application/use-cases/diet/create-calories-use-case.ts
-var CreateCaloriesUseCase = class {
+// src/application/use-cases/diet/errors/diet-not-found-exception.ts
+var DietNotFoundException = class extends UseCaseError {
+  constructor() {
+    super(`N\xE3o foi poss\xEDvel encontrar uma dieta.`);
+    this.name = "DietNotFoundException";
+  }
+};
+
+// src/application/use-cases/diet/create-diet-use-case.ts
+var CreateDietUseCase = class {
   constructor(dietRepository) {
     this.dietRepository = dietRepository;
-    this.basalMetabolicRate = 0;
   }
-  async execute(inputCalories) {
+  async execute(calories) {
     try {
-      const { activity, age, gender, height, weight, weightGoal } = inputCalories;
-      if (gender === "female") {
-        this.basalMetabolicRate = 10 * weight + 6.25 * height - 5 * age - 161;
-      } else {
-        this.basalMetabolicRate = 10 * weight + 6.25 * height - 5 * age + 5;
+      const existingDiet = await this.dietRepository.findByCalories(calories);
+      if (!existingDiet) throw new DietNotFoundException();
+      if (existingDiet.description.length > 0) {
+        return existingDiet.description;
       }
-      const totalCalories = this.basalMetabolicRate * activity;
-      const totalCaloriesWithWeightGoal = weightGoal > weight ? totalCalories + 300 : totalCalories - totalCalories * 0.2;
-      const protein = weight * 2;
-      const fat = weight * 0.8;
-      const carbs = (totalCaloriesWithWeightGoal - (protein * 4 + fat * 9)) / 4;
-      const resultCaloriesRounded = roundToNearestHundred(
-        totalCaloriesWithWeightGoal
-      );
-      const proteinRounded = roundToDecimals(protein);
-      const fatRounded = roundToDecimals(fat);
-      const carbsRounded = roundToDecimals(carbs);
-      let existingCalories = await this.dietRepository.findByCalories(
-        resultCaloriesRounded
-      );
-      if (!existingCalories) {
-        existingCalories = await this.dietRepository.createCalories(
-          resultCaloriesRounded
-        );
-      }
-      return {
-        quantity: existingCalories.calories,
-        protein: proteinRounded,
-        fat: fatRounded,
-        carbs: carbsRounded
-      };
+      const updatedDescription = await this.generateDietDescription(calories);
+      await this.dietRepository.update(updatedDescription, calories);
+      return updatedDescription;
     } catch (err) {
-      throw new CreateCalorieasException(err);
+      throw new CreateDietException(err);
     }
+  }
+  async generateDietDescription(calories) {
+    const genAI = new import_generative_ai.GoogleGenerativeAI(process.env.API_KEY_GEMINI);
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const result = await model.generateContent(
+      `5 card\xE1pios de ${calories} calorias e n\xE3o me mande mais nenhuma informa\xE7\xE3o, apenas o card\xE1pio`
+    );
+    const response = result.response;
+    const text = response.text();
+    return formatDiets(text);
   }
 };
 
@@ -190,25 +182,24 @@ var PrismaDietRepository = class {
   }
 };
 
-// src/application/factory/diet/make-create-calories-factory.ts
-function makeCreateCalories() {
+// src/application/factory/diet/make-create-diet-factory.ts
+function makeCreateDiet() {
   const dietRepository = new PrismaDietRepository();
-  const createCaloriesUseCase = new CreateCaloriesUseCase(dietRepository);
-  return createCaloriesUseCase;
+  const createDietUseCase = new CreateDietUseCase(dietRepository);
+  return createDietUseCase;
 }
 
-// src/infra/http/rest/controller/create-calories-controller.ts
-var CreateCaloriesController = class {
+// src/infra/http/rest/controller/create-diet-controller.ts
+var CreateDietController = class {
   constructor() {
     this.create = async (request, reply) => {
       try {
-        const makeCreateCaloriesUseCase = makeCreateCalories();
-        const calories = await makeCreateCaloriesUseCase.execute(
-          request.body
-        );
-        return reply.status(201).send({ calories });
+        const makeCreateDietUseCase = makeCreateDiet();
+        const { calories } = request.body;
+        const diet = await makeCreateDietUseCase.execute(calories);
+        return reply.status(201).send({ diet });
       } catch (err) {
-        return reply.status(err instanceof CreateCalorieasException ? 500 : 409).send({
+        return reply.status(err instanceof CreateDietException ? 500 : 409).send({
           name: err.name,
           message: err.message
         });
@@ -217,12 +208,12 @@ var CreateCaloriesController = class {
   }
 };
 
-// src/infra/http/rest/routes/create-calories.routes.ts
-var createCaloriesController = new CreateCaloriesController();
-async function createCaloriesRoutes(app) {
-  app.post("/", createCaloriesController.create);
+// src/infra/http/rest/routes/diet.routes.ts
+var createDietController = new CreateDietController();
+async function createDietRoutes(app) {
+  app.post("/", createDietController.create);
 }
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  createCaloriesRoutes
+  createDietRoutes
 });

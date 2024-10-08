@@ -1,5 +1,5 @@
 import { DietRepository } from "@/infra/database/repositories/diet-repository";
-import { formatMenus } from "@/utils/format-menus";
+import { formatDiets } from "@/utils/format-diets";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { CreateDietException } from "./errors/create-diet-exception";
 import { DietNotFoundException } from "./errors/diet-not-found-exception";
@@ -38,6 +38,6 @@ export class CreateDietUseCase {
     const response = result.response;
     const text = response.text();
 
-    return formatMenus(text);
+    return formatDiets(text);
   }
 }

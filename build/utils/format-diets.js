@@ -17,31 +17,17 @@ var __copyProps = (to, from, except, desc) => {
 };
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/application/use-cases/diet/errors/create-calories-exception.ts
-var create_calories_exception_exports = {};
-__export(create_calories_exception_exports, {
-  CreateCaloriesException: () => CreateCaloriesException
+// src/utils/format-diets.ts
+var format_diets_exports = {};
+__export(format_diets_exports, {
+  formatDiets: () => formatDiets
 });
-module.exports = __toCommonJS(create_calories_exception_exports);
-
-// src/application/errors/use-case-errors.ts
-var UseCaseError = class extends Error {
-  messageException() {
-    return {
-      name: this.name,
-      message: this.message
-    };
-  }
-};
-
-// src/application/use-cases/diet/errors/create-calories-exception.ts
-var CreateCaloriesException = class extends UseCaseError {
-  constructor(err) {
-    super(`Erro ao criar as calorias : ${err}.`);
-    this.name = "CreateCalorieasException";
-  }
-};
+module.exports = __toCommonJS(format_diets_exports);
+function formatDiets(text) {
+  let menus = text.split(/\*\*Card[aá]pio \d+:\*\*/).map((menu) => menu.trim()).filter((menu) => menu.length > 0);
+  return menus.slice(1);
+}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  CreateCaloriesException
+  formatDiets
 });

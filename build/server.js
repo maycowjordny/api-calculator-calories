@@ -50,7 +50,7 @@ var UseCaseError = class extends Error {
 };
 
 // src/application/use-cases/diet/errors/create-calories-exception.ts
-var CreateCalorieasException = class extends UseCaseError {
+var CreateCaloriesException = class extends UseCaseError {
   constructor(err) {
     super(`Erro ao criar as calorias : ${err}.`);
     this.name = "CreateCalorieasException";
@@ -97,7 +97,7 @@ var CreateCaloriesUseCase = class {
         carbs: carbsRounded
       };
     } catch (err) {
-      throw new CreateCalorieasException(err);
+      throw new CreateCaloriesException(err);
     }
   }
 };
@@ -212,7 +212,7 @@ var CreateCaloriesController = class {
         );
         return reply.status(201).send({ calories });
       } catch (err) {
-        return reply.status(err instanceof CreateCalorieasException ? 500 : 409).send({
+        return reply.status(err instanceof CreateCaloriesException ? 500 : 409).send({
           name: err.name,
           message: err.message
         });
@@ -221,14 +221,94 @@ var CreateCaloriesController = class {
   }
 };
 
-// src/infra/http/rest/routes/create-calories.routes.ts
+// src/infra/http/rest/routes/calories.routes.ts
 var createCaloriesController = new CreateCaloriesController();
 async function createCaloriesRoutes(app2) {
   app2.post("/", createCaloriesController.create);
 }
 
-// src/utils/format-menus.ts
-function formatMenus(text) {
+// src/application/use-cases/checkout/errors/create-checkout-exception.ts
+var CreateCheckoutException = class extends UseCaseError {
+  constructor(err) {
+    super(`Erro ao processar pagamento: ${err}.`);
+    this.name = "CreateCheckoutException";
+  }
+};
+
+// src/application/use-cases/checkout/create-checkout-use-case.ts
+var CreateCheckoutUseCase = class {
+  constructor(stripeRepository) {
+    this.stripeRepository = stripeRepository;
+  }
+  async execute() {
+    try {
+      return this.stripeRepository.createCheckoutSession();
+    } catch (err) {
+      throw new CreateCheckoutException(err);
+    }
+  }
+};
+
+// src/infra/stripe/stripe-payment-service.ts
+var import_stripe = __toESM(require("stripe"));
+var StripePaymentService = class {
+  constructor() {
+    this.stripe = new import_stripe.default(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: "2024-09-30.acacia",
+      appInfo: {
+        name: "Fit-Caloria"
+      }
+    });
+  }
+  async createCheckoutSession() {
+    const session = await this.stripe.checkout.sessions.create({
+      line_items: [
+        {
+          price: "price_1Q7H4wJMMqaVQXpHifnZRv1N",
+          quantity: 1
+        }
+      ],
+      mode: "payment",
+      success_url: "https://example.com/success",
+      cancel_url: "https://example.com/cancel"
+    });
+    return session.url;
+  }
+};
+
+// src/application/factory/checkout/make-create-checkout.ts
+function makeCreateCheckout() {
+  const checkoutRepository = new StripePaymentService();
+  const createCheckoutUseCase = new CreateCheckoutUseCase(checkoutRepository);
+  return createCheckoutUseCase;
+}
+
+// src/infra/http/rest/controller/create-checkout-controller.ts
+var CreateCheckoutController = class {
+  constructor() {
+    this.create = async (request, reply) => {
+      try {
+        const createCheckoutUseCase = makeCreateCheckout();
+        const checkoutUrl = await createCheckoutUseCase.execute();
+        reply.redirect(checkoutUrl, 303);
+      } catch (err) {
+        return reply.status(err instanceof CreateCheckoutException ? 500 : 409).send({
+          name: err.name,
+          message: err.message
+        });
+      }
+    };
+  }
+};
+
+// src/infra/http/rest/routes/checkout.routes.ts
+var createCheckoutController = new CreateCheckoutController();
+async function createCheckoutRoutes(app2) {
+  app2.post("/", createCheckoutController.create);
+}
+
+// src/utils/format-diets.ts
+function formatDiets(text) {
   let menus = text.split(/\*\*Card[aá]pio \d+:\*\*/).map((menu) => menu.trim()).filter((menu) => menu.length > 0);
   return menus.slice(1);
 }
@@ -279,7 +359,7 @@ var CreateDietUseCase = class {
     );
     const response = result.response;
     const text = response.text();
-    return formatMenus(text);
+    return formatDiets(text);
   }
 };
 
@@ -309,7 +389,7 @@ var CreateDietController = class {
   }
 };
 
-// src/infra/http/rest/routes/create-diet.routes.ts
+// src/infra/http/rest/routes/diet.routes.ts
 var createDietController = new CreateDietController();
 async function createDietRoutes(app2) {
   app2.post("/", createDietController.create);
@@ -319,6 +399,7 @@ async function createDietRoutes(app2) {
 async function appRoutes() {
   app.register(createCaloriesRoutes, { prefix: "/calculate-calories" });
   app.register(createDietRoutes, { prefix: "/api/gemini" });
+  app.register(createCheckoutRoutes, { prefix: "/checkout" });
 }
 
 // src/app.ts
@@ -331,7 +412,6 @@ import_node_cron.default.schedule("*/5 * * * *", async () => {
     const response = await import_axios.default.get(
       "https://api-calculator-calories-1.onrender.com/cron"
     );
-    console.log("Server pinged:", response.data);
   } catch (error) {
     console.error("Error pinging server:", error);
   }

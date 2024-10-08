@@ -46,7 +46,7 @@ var UseCaseError = class extends Error {
 };
 
 // src/application/use-cases/diet/errors/create-calories-exception.ts
-var CreateCalorieasException = class extends UseCaseError {
+var CreateCaloriesException = class extends UseCaseError {
   constructor(err) {
     super(`Erro ao criar as calorias : ${err}.`);
     this.name = "CreateCalorieasException";
@@ -93,7 +93,7 @@ var CreateCaloriesUseCase = class {
         carbs: carbsRounded
       };
     } catch (err) {
-      throw new CreateCalorieasException(err);
+      throw new CreateCaloriesException(err);
     }
   }
 };
@@ -208,7 +208,7 @@ var CreateCaloriesController = class {
         );
         return reply.status(201).send({ calories });
       } catch (err) {
-        return reply.status(err instanceof CreateCalorieasException ? 500 : 409).send({
+        return reply.status(err instanceof CreateCaloriesException ? 500 : 409).send({
           name: err.name,
           message: err.message
         });
