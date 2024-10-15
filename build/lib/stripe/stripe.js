@@ -27,46 +27,12 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
 ));
 var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: true }), mod);
 
-// src/application/factory/checkout/make-create-checkout.ts
-var make_create_checkout_exports = {};
-__export(make_create_checkout_exports, {
-  makeCreateCheckout: () => makeCreateCheckout
-});
-module.exports = __toCommonJS(make_create_checkout_exports);
-
-// src/application/errors/use-case-errors.ts
-var UseCaseError = class extends Error {
-  messageException() {
-    return {
-      name: this.name,
-      message: this.message
-    };
-  }
-};
-
-// src/application/use-cases/checkout/errors/create-checkout-exception.ts
-var CreateCheckoutException = class extends UseCaseError {
-  constructor(err) {
-    super(`Erro ao processar pagamento: ${err}.`);
-    this.name = "CreateCheckoutException";
-  }
-};
-
-// src/application/use-cases/checkout/create-checkout-use-case.ts
-var CreateCheckoutUseCase = class {
-  constructor(stripeRepository) {
-    this.stripeRepository = stripeRepository;
-  }
-  async execute() {
-    try {
-      return this.stripeRepository.createCheckoutSession();
-    } catch (err) {
-      throw new CreateCheckoutException(err);
-    }
-  }
-};
-
 // src/lib/stripe/stripe.ts
+var stripe_exports = {};
+__export(stripe_exports, {
+  stripe: () => stripe
+});
+module.exports = __toCommonJS(stripe_exports);
 var import_stripe = __toESM(require("stripe"));
 if (!process.env.STRIPE_SECRET_KEY) {
   throw new Error(
@@ -77,32 +43,7 @@ var stripe = new import_stripe.default(process.env.STRIPE_SECRET_KEY, {
   apiVersion: "2024-09-30.acacia",
   typescript: true
 });
-
-// src/infra/stripe/stripe-payment-service.ts
-var StripePaymentService = class {
-  async createCheckoutSession() {
-    const session = await stripe.checkout.sessions.create({
-      line_items: [
-        {
-          price: process.env.STRIPE_PRICE_ID,
-          quantity: 1
-        }
-      ],
-      mode: "payment",
-      success_url: `${process.env.BASE_URL}/`,
-      cancel_url: `${process.env.BASE_URL}/`
-    });
-    return session;
-  }
-};
-
-// src/application/factory/checkout/make-create-checkout.ts
-function makeCreateCheckout() {
-  const checkoutRepository = new StripePaymentService();
-  const createCheckoutUseCase = new CreateCheckoutUseCase(checkoutRepository);
-  return createCheckoutUseCase;
-}
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {
-  makeCreateCheckout
+  stripe
 });

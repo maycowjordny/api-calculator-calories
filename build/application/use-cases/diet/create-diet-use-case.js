@@ -43,6 +43,16 @@ var UseCaseError = class extends Error {
   }
 };
 
+// src/application/use-cases/payment-session/errors/session-not-paid-exception.ts
+var SessionNotPaidException = class extends UseCaseError {
+  constructor() {
+    super(
+      `A sess\xE3o n\xE3o foi paga, e n\xE3o \xE9 poss\xEDvel gerar uma dieta personalizada sem excluir alimentos.`
+    );
+    this.name = "SessionNotPaidException";
+  }
+};
+
 // src/application/use-cases/diet/errors/create-diet-exception.ts
 var CreateDietException = class extends UseCaseError {
   constructor(err) {
@@ -61,28 +71,40 @@ var DietNotFoundException = class extends UseCaseError {
 
 // src/application/use-cases/diet/create-diet-use-case.ts
 var CreateDietUseCase = class {
-  constructor(dietRepository) {
+  constructor(dietRepository, verifyPaymentSessionUseCase) {
     this.dietRepository = dietRepository;
+    this.verifyPaymentSessionUseCase = verifyPaymentSessionUseCase;
   }
-  async execute(calories) {
+  async execute(calories, excludedFoods, sessionId) {
     try {
+      await this.ensureSessionIsPaid(excludedFoods, sessionId);
       const existingDiet = await this.dietRepository.findByCalories(calories);
       if (!existingDiet) throw new DietNotFoundException();
       if (existingDiet.description.length > 0) {
         return existingDiet.description;
       }
-      const updatedDescription = await this.generateDietDescription(calories);
+      const updatedDescription = await this.generateDietDescription(
+        calories,
+        excludedFoods
+      );
       await this.dietRepository.update(updatedDescription, calories);
       return updatedDescription;
     } catch (err) {
       throw new CreateDietException(err);
     }
   }
-  async generateDietDescription(calories) {
+  async ensureSessionIsPaid(excludedFoods, sessionId) {
+    const isPaidSession = await this.verifyPaymentSessionUseCase.execute(
+      sessionId
+    );
+    if (!isPaidSession && excludedFoods.length > 0)
+      throw new SessionNotPaidException();
+  }
+  async generateDietDescription(calories, excludedFoods) {
     const genAI = new import_generative_ai.GoogleGenerativeAI(process.env.API_KEY_GEMINI);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await model.generateContent(
-      `5 card\xE1pios de ${calories} calorias e n\xE3o me mande mais nenhuma informa\xE7\xE3o, apenas o card\xE1pio`
+      excludedFoods ? `5 card\xE1pios de ${calories} calorias sem esses alimentos: ${excludedFoods}. N\xE3o me envie mais nenhuma informa\xE7\xE3o, apenas o card\xE1pio.` : `5 card\xE1pios de ${calories} calorias. N\xE3o me envie mais nenhuma informa\xE7\xE3o, apenas o card\xE1pio.`
     );
     const response = result.response;
     const text = response.text();

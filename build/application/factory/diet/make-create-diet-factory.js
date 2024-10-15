@@ -43,6 +43,16 @@ var UseCaseError = class extends Error {
   }
 };
 
+// src/application/use-cases/payment-session/errors/session-not-paid-exception.ts
+var SessionNotPaidException = class extends UseCaseError {
+  constructor() {
+    super(
+      `A sess\xE3o n\xE3o foi paga, e n\xE3o \xE9 poss\xEDvel gerar uma dieta personalizada sem excluir alimentos.`
+    );
+    this.name = "SessionNotPaidException";
+  }
+};
+
 // src/application/use-cases/diet/errors/create-diet-exception.ts
 var CreateDietException = class extends UseCaseError {
   constructor(err) {
@@ -61,32 +71,79 @@ var DietNotFoundException = class extends UseCaseError {
 
 // src/application/use-cases/diet/create-diet-use-case.ts
 var CreateDietUseCase = class {
-  constructor(dietRepository) {
+  constructor(dietRepository, verifyPaymentSessionUseCase) {
     this.dietRepository = dietRepository;
+    this.verifyPaymentSessionUseCase = verifyPaymentSessionUseCase;
   }
-  async execute(calories) {
+  async execute(calories, excludedFoods, sessionId) {
     try {
+      await this.ensureSessionIsPaid(excludedFoods, sessionId);
       const existingDiet = await this.dietRepository.findByCalories(calories);
       if (!existingDiet) throw new DietNotFoundException();
       if (existingDiet.description.length > 0) {
         return existingDiet.description;
       }
-      const updatedDescription = await this.generateDietDescription(calories);
+      const updatedDescription = await this.generateDietDescription(
+        calories,
+        excludedFoods
+      );
       await this.dietRepository.update(updatedDescription, calories);
       return updatedDescription;
     } catch (err) {
       throw new CreateDietException(err);
     }
   }
-  async generateDietDescription(calories) {
+  async ensureSessionIsPaid(excludedFoods, sessionId) {
+    const isPaidSession = await this.verifyPaymentSessionUseCase.execute(
+      sessionId
+    );
+    if (!isPaidSession && excludedFoods.length > 0)
+      throw new SessionNotPaidException();
+  }
+  async generateDietDescription(calories, excludedFoods) {
     const genAI = new import_generative_ai.GoogleGenerativeAI(process.env.API_KEY_GEMINI);
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await model.generateContent(
-      `5 card\xE1pios de ${calories} calorias e n\xE3o me mande mais nenhuma informa\xE7\xE3o, apenas o card\xE1pio`
+      excludedFoods ? `5 card\xE1pios de ${calories} calorias sem esses alimentos: ${excludedFoods}. N\xE3o me envie mais nenhuma informa\xE7\xE3o, apenas o card\xE1pio.` : `5 card\xE1pios de ${calories} calorias. N\xE3o me envie mais nenhuma informa\xE7\xE3o, apenas o card\xE1pio.`
     );
     const response = result.response;
     const text = response.text();
     return formatDiets(text);
+  }
+};
+
+// src/application/use-cases/payment-session/errors/create-payment-session-exception.ts
+var CreatePaymentSessionException = class extends UseCaseError {
+  constructor(err) {
+    super(`Erro ao criar sess\xE3o de pagamento: ${err}.`);
+    this.name = "CreatePaymentSessionException";
+  }
+};
+
+// src/application/use-cases/payment-session/find-payment-session-by-session-id.ts
+var FindPaymentSessionBySessionIdUseCase = class {
+  constructor(paymentSessionRepository) {
+    this.paymentSessionRepository = paymentSessionRepository;
+  }
+  async execute(sessionId) {
+    try {
+      if (!sessionId) return null;
+      return await this.paymentSessionRepository.findBySessionId(sessionId);
+    } catch (err) {
+      throw new CreatePaymentSessionException(err);
+    }
+  }
+};
+
+// src/application/use-cases/payment-session/verify-payment-session.ts
+var VerifyPaymentSessionUseCase = class {
+  constructor(findPaymentSessionBySessionIdUseCase) {
+    this.findPaymentSessionBySessionIdUseCase = findPaymentSessionBySessionIdUseCase;
+  }
+  async execute(sessionId) {
+    const paymentSession = await this.findPaymentSessionBySessionIdUseCase.execute(sessionId);
+    if (!paymentSession || !paymentSession.isPaid) return false;
+    return true;
   }
 };
 
@@ -182,10 +239,89 @@ var PrismaDietRepository = class {
   }
 };
 
+// src/domain/entities/payment-session-entity.ts
+var PaymentSession = class _PaymentSession extends Entity {
+  get id() {
+    return this.props.id;
+  }
+  get sessionId() {
+    return this.props.sessionId;
+  }
+  get isPaid() {
+    return this.props.isPaid;
+  }
+  get email() {
+    return this.props.email;
+  }
+  get updatedAt() {
+    return this.props.updatedAt;
+  }
+  get createdAt() {
+    return this.props.createdAt;
+  }
+  static create(props) {
+    const paymentsession = new _PaymentSession({
+      ...props
+    });
+    return paymentsession;
+  }
+};
+
+// src/infra/database/prisma/mappers/payment-session/payment-session-mapper.ts
+var PaymentSessionMapper = class {
+  static toDomain(rawPaymentSession) {
+    return new PaymentSession({
+      id: rawPaymentSession.id,
+      sessionId: rawPaymentSession.sessionId,
+      email: rawPaymentSession.email,
+      isPaid: rawPaymentSession.isPaid,
+      createdAt: rawPaymentSession.createdAt,
+      updatedAt: rawPaymentSession.updatedAt
+    });
+  }
+};
+
+// src/infra/database/prisma/mappers/payment-session/create-payment-session-mapper.ts
+var CreatePaymentSessionMapper = class extends PaymentSessionMapper {
+  static toPrisma(paymentsession) {
+    return {
+      sessionId: paymentsession.sessionId,
+      email: paymentsession.email,
+      isPaid: paymentsession.isPaid
+    };
+  }
+};
+
+// src/infra/database/prisma/repositories/prisma-payment-session-repository.ts
+var PrismaPaymentSessionRepository = class {
+  async create(data) {
+    const result = await prisma.paymentSession.create({
+      data: CreatePaymentSessionMapper.toPrisma(data)
+    });
+    return PaymentSessionMapper.toDomain(result);
+  }
+  async findBySessionId(sessionId) {
+    const result = await prisma.paymentSession.findUnique({
+      where: {
+        sessionId
+      }
+    });
+    return result && PaymentSessionMapper.toDomain(result);
+  }
+};
+
 // src/application/factory/diet/make-create-diet-factory.ts
 function makeCreateDiet() {
+  const paymentSessionRepository = new PrismaPaymentSessionRepository();
   const dietRepository = new PrismaDietRepository();
-  const createDietUseCase = new CreateDietUseCase(dietRepository);
+  const findPaymentSessionBySessionIdUseCase = new FindPaymentSessionBySessionIdUseCase(paymentSessionRepository);
+  const verifyPaymentSessionUseCase = new VerifyPaymentSessionUseCase(
+    findPaymentSessionBySessionIdUseCase
+  );
+  const createDietUseCase = new CreateDietUseCase(
+    dietRepository,
+    verifyPaymentSessionUseCase
+  );
   return createDietUseCase;
 }
 // Annotate the CommonJS export names for ESM import in node:

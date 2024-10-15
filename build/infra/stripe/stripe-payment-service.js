@@ -33,29 +33,34 @@ __export(stripe_payment_service_exports, {
   StripePaymentService: () => StripePaymentService
 });
 module.exports = __toCommonJS(stripe_payment_service_exports);
+
+// src/lib/stripe/stripe.ts
 var import_stripe = __toESM(require("stripe"));
+if (!process.env.STRIPE_SECRET_KEY) {
+  throw new Error(
+    "STRIPE_SECRET_KEY is missing. Please set the environment variable."
+  );
+}
+var stripe = new import_stripe.default(process.env.STRIPE_SECRET_KEY, {
+  apiVersion: "2024-09-30.acacia",
+  typescript: true
+});
+
+// src/infra/stripe/stripe-payment-service.ts
 var StripePaymentService = class {
-  constructor() {
-    this.stripe = new import_stripe.default(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: "2024-09-30.acacia",
-      appInfo: {
-        name: "Fit-Caloria"
-      }
-    });
-  }
   async createCheckoutSession() {
-    const session = await this.stripe.checkout.sessions.create({
+    const session = await stripe.checkout.sessions.create({
       line_items: [
         {
-          price: "price_1Q7H4wJMMqaVQXpHifnZRv1N",
+          price: process.env.STRIPE_PRICE_ID,
           quantity: 1
         }
       ],
       mode: "payment",
-      success_url: "https://example.com/success",
-      cancel_url: "https://example.com/cancel"
+      success_url: `${process.env.BASE_URL}/`,
+      cancel_url: `${process.env.BASE_URL}/`
     });
-    return session.url;
+    return session;
   }
 };
 // Annotate the CommonJS export names for ESM import in node:
