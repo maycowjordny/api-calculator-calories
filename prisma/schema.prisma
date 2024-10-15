@@ -14,3 +14,12 @@ model Diet {
   createdAt   DateTime @default(now()) @map("DAT_CREATED")
   updatedAt   DateTime @updatedAt @map("DAT_UPDATED")
 }
+
+model PaymentSession {
+  id        String   @id @default(uuid()) @map("IDT_PAYMENT_SESSION")
+  sessionId String   @unique @map("SESSION_ID")
+  email     String   @map("DES_EMAIL")
+  isPaid    Boolean  @map("FLAG_IS_PAID")
+  createdAt DateTime @default(now()) @map("DAT_CREATED")
+  updatedAt DateTime @updatedAt @map("DAT_UPDATED")
+}

@@ -6,9 +6,17 @@ export class CreateDietController {
   public create = async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       const makeCreateDietUseCase = makeCreateDiet();
-      const { calories } = request.body as { calories: number };
+      const { calories, sessionId, excludedFoods } = request.body as {
+        calories: number;
+        sessionId: string;
+        excludedFoods: string[];
+      };
 
-      const diet = await makeCreateDietUseCase.execute(calories);
+      const diet = await makeCreateDietUseCase.execute(
+        calories,
+        excludedFoods,
+        sessionId
+      );
 
       return reply.status(201).send({ diet: diet });
     } catch (err) {

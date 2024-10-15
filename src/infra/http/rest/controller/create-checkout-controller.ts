@@ -7,9 +7,9 @@ export class CreateCheckoutController {
     try {
       const createCheckoutUseCase = makeCreateCheckout();
 
-      const checkoutUrl = await createCheckoutUseCase.execute();
+      const session = await createCheckoutUseCase.execute();
 
-      reply.redirect(checkoutUrl, 303);
+      reply.status(200).send({ id: session.id, url: session.url });
     } catch (err) {
       return reply
         .status(err instanceof CreateCheckoutException ? 500 : 409)

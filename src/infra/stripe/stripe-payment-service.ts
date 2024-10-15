@@ -1,31 +1,23 @@
+import { stripe } from "@/lib/stripe/stripe";
 import Stripe from "stripe";
 import { StripeRepository } from "./repositories/stripe-repository";
 
 export class StripePaymentService implements StripeRepository {
-  private stripe: Stripe;
-
-  constructor() {
-    this.stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: "2024-09-30.acacia",
-      appInfo: {
-        name: "Fit-Caloria",
-      },
-    });
-  }
-
-  async createCheckoutSession(): Promise<string> {
-    const session = await this.stripe.checkout.sessions.create({
+  async createCheckoutSession(): Promise<
+    Stripe.Response<Stripe.Checkout.Session>
+  > {
+    const session = await stripe.checkout.sessions.create({
       line_items: [
         {
-          price: "price_1Q7H4wJMMqaVQXpHifnZRv1N",
+          price: process.env.STRIPE_PRICE_ID,
           quantity: 1,
         },
       ],
       mode: "payment",
-      success_url: "https://example.com/success",
-      cancel_url: "https://example.com/cancel",
+      success_url: `${process.env.BASE_URL}/`,
+      cancel_url: `${process.env.BASE_URL}/`,
     });
 
-    return session.url!;
+    return session;
   }
 }
