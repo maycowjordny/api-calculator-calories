@@ -4,22 +4,20 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  url      = env("DATABASE_URL_DEV")
 }
 
-model Diet {
-  id          String   @id @default(uuid()) @map("IDT_DIET")
-  calories    Int?     @unique @map("NUM_QUANTITY")
-  description String[] @map("DES_DESCRIPTION")
-  createdAt   DateTime @default(now()) @map("DAT_CREATED")
-  updatedAt   DateTime @updatedAt @map("DAT_UPDATED")
+enum PaymentType {
+  CARD
+  BOLETO
 }
 
 model PaymentSession {
-  id        String   @id @default(uuid()) @map("IDT_PAYMENT_SESSION")
-  sessionId String   @unique @map("SESSION_ID")
-  email     String   @map("DES_EMAIL")
-  isPaid    Boolean  @map("FLAG_IS_PAID")
-  createdAt DateTime @default(now()) @map("DAT_CREATED")
-  updatedAt DateTime @updatedAt @map("DAT_UPDATED")
+  id          String      @id @default(uuid()) @map("IDT_PAYMENT_SESSION")
+  sessionId   String      @unique @map("SESSION_ID")
+  email       String      @map("DES_EMAIL")
+  isPaid      Boolean     @map("FLAG_IS_PAID")
+  paymentType PaymentType @map("DES_PAYMENT_TYPE")
+  createdAt   DateTime    @default(now()) @map("DAT_CREATED")
+  updatedAt   DateTime    @updatedAt @map("DAT_UPDATED")
 }

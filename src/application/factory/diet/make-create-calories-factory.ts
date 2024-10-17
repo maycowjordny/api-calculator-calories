@@ -1,9 +1,7 @@
-import { CreateCaloriesUseCase } from "@/application/use-cases/diet/create-calories-use-case";
-import { PrismaDietRepository } from "@/infra/database/prisma/repositories/prisma-diet-repository";
+import { CreateCaloriesUseCase } from '@/application/use-cases/diet/create-calories-use-case';
 
 export function makeCreateCalories() {
-  const dietRepository = new PrismaDietRepository();
-  const createCaloriesUseCase = new CreateCaloriesUseCase(dietRepository);
+  const createCaloriesUseCase = new CreateCaloriesUseCase();
 
   return createCaloriesUseCase;
 }

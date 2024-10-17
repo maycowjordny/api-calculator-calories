@@ -1,13 +1,11 @@
-import { PaymentSession } from "@/domain/entities/payment-session-entity";
-import { PaymentSessionProps } from "@/domain/interfaces/payment-session";
-import { prisma } from "@/lib/prisma/prisma";
-import { PaymentSessionRepository } from "../../repositories/payment-session-repository";
-import { CreatePaymentSessionMapper } from "../mappers/payment-session/create-payment-session-mapper";
-import { PaymentSessionMapper } from "../mappers/payment-session/payment-session-mapper";
+import { PaymentSession } from '@/domain/entities/payment-session-entity';
+import { PaymentSessionProps } from '@/domain/interfaces/payment-session';
+import { prisma } from '@/lib/prisma/prisma';
+import { PaymentSessionRepository } from '../../repositories/payment-session-repository';
+import { CreatePaymentSessionMapper } from '../mappers/payment-session/create-payment-session-mapper';
+import { PaymentSessionMapper } from '../mappers/payment-session/payment-session-mapper';
 
-export class PrismaPaymentSessionRepository
-  implements PaymentSessionRepository
-{
+export class PrismaPaymentSessionRepository implements PaymentSessionRepository {
   async create(data: PaymentSessionProps): Promise<PaymentSession> {
     const result = await prisma.paymentSession.create({
       data: CreatePaymentSessionMapper.toPrisma(data),

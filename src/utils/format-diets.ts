@@ -1,8 +1,5 @@
-export function formatDiets(text: string): string[] {
-  let menus = text
-    .split(/\*\*Card[aá]pio \d+:\*\*/)
-    .map((menu) => menu.trim())
-    .filter((menu) => menu.length > 0);
+export function formatDiets(text: string) {
+  let menus = text.split(/\*\*Card[aá]pio \d+:\*\*/).toString();
 
-  return menus.slice(1);
+  return menus;
 }

@@ -1,5 +1,6 @@
-import { PaymentSession } from "@/domain/entities/payment-session-entity";
-import { PaymentSession as RawPaymentSession } from "@prisma/client";
+import { PaymentSession } from '@/domain/entities/payment-session-entity';
+import { PaymentTypeEnum } from '@/domain/enum/payment-type';
+import { PaymentSession as RawPaymentSession } from '@prisma/client';
 
 export class PaymentSessionMapper {
   static toDomain(rawPaymentSession: RawPaymentSession): PaymentSession {
@@ -8,6 +9,7 @@ export class PaymentSessionMapper {
       sessionId: rawPaymentSession.sessionId,
       email: rawPaymentSession.email,
       isPaid: rawPaymentSession.isPaid,
+      paymentType: rawPaymentSession.paymentType as PaymentTypeEnum,
       createdAt: rawPaymentSession.createdAt,
       updatedAt: rawPaymentSession.updatedAt,
     });

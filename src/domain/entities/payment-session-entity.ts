@@ -1,9 +1,11 @@
-import { Entity } from "../../core/domain/Entity";
+import { Entity } from '../../core/domain/Entity';
+import { PaymentTypeEnum } from '../enum/payment-type';
 
 export type PaymentSessionProps = {
   id: string;
   sessionId: string;
   isPaid: boolean;
+  paymentType: PaymentTypeEnum;
   email: string | null | undefined;
   createdAt?: Date;
   updatedAt?: Date;

@@ -1,9 +1,9 @@
-import { Entity } from "../../core/domain/Entity";
+import { Entity } from '../../core/domain/Entity';
 
 export type DietProps = {
   id: string;
   calories?: number;
-  description?: string[];
+  description?: string;
   createdAt?: Date;
   updatedAt?: Date;
 };
